@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Z宝的音乐盒喂</title>
+    <link rel="stylesheet" href="./bofangqi.css">
+</head>
+<body>
+    <div class="wrap">
+        <div class="play_wrap" id="player">
+        <div class="search_bar">
+            <img src="/images/音乐播放器/title.png" alt="" width="50px" height="50px">
+        <!-- 搜索歌曲 -->
+        <input type="text" v-model = "query" @keyup.enter ="seachMusic"  autocomplete="off" id=""placeholer = "输入要搜索的歌曲">
+        </div>           
+        <div class="center_con" >
+        <!-- 搜索歌曲结果 -->
+            <div class="song_wrapper" ref='song_wrapper'>
+                <ul class="song_list">
+                    <li v-for = "item in musicList">
+                        <!-- 点击播放 -->
+                        <a href="javascript:;" @click = "playMusic(item.id)"></a>
+                        <b>{{item.name}}</b>
+                        <span>
+                            <i @click = "playMv(item.mvid)" v-if = "item.mvid != 0"></i>
+                        </span>
+                    </li>
+
+                </ul>
+                <img src="/images/音乐播放器/line.png"class="switch_btn" >
+            </div>
+        <!-- 歌曲信息容器 -->
+        <div class="player_con" :class = "{playing:isPlay}">
+            <img src="/images/音乐播放器/player_bar.png" alt="" class="play_bar">
+        <!-- 黑胶碟片     -->
+            <img src="/images/音乐播放器/disc.png" alt="" class="disc autoRotate" >
+            <img :src="musicCover" alt=""class="cover autoRotate">
+        </div>
+        <!-- 评论容器 -->
+        <div class="comment_wrapper"ref='comment_wrapper'  >
+            <h5 class="title">
+                热门留言
+            </h5>
+            <div class="comment_list">
+                <dl v-for = "item in hotComments">
+                    <dt> <img :src="item.user.avatarUrl" alt=""></dt>
+                    <dd class="name">{{item.user.nickname}}</dd>
+                    <dd class="detail">{{ item.content}}</dd>
+                </dl>
+            </div>
+            <img src="/images/音乐播放器/line.png" class="right_line">
+        </div>
+       
+            
+        </div>
+        <div class="audio_con">
+            <audio ref='audio'@play = "play" @pause="pause" :src = "musicUrl" controls autoplay loop class="myaudio"></audio>
+        </div>
+        <div class="video_con" v-show="isShow">
+            <video ref='video' :src="mvUrl" controls="controls"></video>
+                <div class="mask" @click = "closeMv"></div>
+        </div>
+        </div>
+    </div>
+    <script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+    <script src="https://unpkg.com/axios/dist/axios.min.js"></script>
+    <script>
+        var app = new Vue({
+            el:"#player",
+            data:{
+                query:"",
+                musicList:[],
+                musicUrl:"",
+                musicCover:"",
+                hotComments:[],
+                isPlay:false,
+                isShow:false,
+                mvUrl:""
+            },
+            methods:{
+                seachMusic:function(){
+                    var that = this;
+                    axios.get("https://autumnfish.cn/search?keywords=" + this.query)
+                    .then(
+                        function(response){
+                            console.log(response);
+                            that.musicList = response.data.result.songs; 
+                        },function(err){}
+                    )
+                },
+                playMusic:function(musicId){
+                    var that = this;
+                    console.log(musicId);
+                    axios.get("https://autumnfish.cn/song/url?id=" + musicId)
+                    .then(function(response){
+                        console.log(response);
+                        that.musicUrl = response.data.data[0].url;
+                    },function(err){})
+                    axios.get("https://autumnfish.cn/song/detail?ids="+ musicId)
+                    .then(function(response){    
+                        that.musicCover = response.data.songs[0].al.picUrl;
+                    },function(err){})
+                    axios.get("https://autumnfish.cn/comment/hot?type=0&id=" + musicId)
+                    .then(function(response){
+                        // console.log(response.data.hotComments);
+                        that.hotComments = response.data.hotComments
+                   
+                    },function(err){})
+                },
+                    play:function(){
+                        // console.log("play");
+                        this.isPlay = true;
+                    },
+                    pause:function(){
+                        // console.log("pause");
+                        this.isPlay = false;
+                    },
+                    playMv:function(mvid){
+                        var that = this;
+                        axios.get("https://autumnfish.cn/mv/url?id=" + mvid)
+                        .then(function(response){
+                            console.log(response.data.data.url);
+                            that.isShow = true;
+                            that.mvUrl = response.data.data.url;
+                        },function(err){})
+                    },
+                    closeMv:function(){
+                        this.isShow = false;
+                        this.$rerfs.video.pause();
+                    },
+            }
+
+        })
+    </script>
+</body>
+</html>
